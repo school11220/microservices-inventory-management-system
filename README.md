@@ -2,6 +2,15 @@
 
 Production-grade microservices inventory and order management platform built to match `project.pdf` in this directory.
 
+## Submission Links
+
+- GitHub repository: `https://github.com/school11220/microservices-inventory-management-system`
+- Temporary public demo: `https://msgstr-divx-kansas-celebrities.trycloudflare.com`
+- Demo video release: `https://github.com/school11220/microservices-inventory-management-system/releases/tag/demo-video-v1`
+- Report PDF: [`docs/Microservices_Inventory_Management_System_Report.pdf`](docs/Microservices_Inventory_Management_System_Report.pdf)
+
+The public demo URL is a Cloudflare quick tunnel backed by the local Docker Compose deployment. It is useful for a temporary submission review, but a stable production URL still requires the permanent deployment inputs listed in [`docs/DEPLOYMENT_RUNBOOK.md`](docs/DEPLOYMENT_RUNBOOK.md).
+
 ## Stack
 
 - Frontend: React, TypeScript, TailwindCSS, React Router, Axios, Redux Toolkit
@@ -86,13 +95,20 @@ BASE_URL=http://localhost:3000 ./scripts/smoke-test.sh
 LOAD_TEST_URL=http://localhost:3000/health LOAD_TEST_REQUESTS=1000 npm run load:test
 ```
 
+Record a 3-7 minute submission walkthrough:
+
+```bash
+DEMO_BASE_URL=http://localhost:8080 npm run record:demo
+```
+
 Latest local verification:
 
 - `npm run verify`: passed.
 - `npm run lint`: passed.
 - `docker compose config --quiet`: passed.
 - Docker smoke test: passed, including product creation, order creation, payment simulation, stock-reservation saga, and order confirmation.
-- Clean health load test: 1000 requests, 0 failures, about 4200 requests/minute.
+- Public tunnel smoke test: passed against `https://msgstr-divx-kansas-celebrities.trycloudflare.com/api`.
+- Clean health load test: 1000 requests, 0 failures, 8496.18 requests/minute, p95 524.06 ms.
 
 Health and metrics endpoints:
 

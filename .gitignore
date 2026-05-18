@@ -10,6 +10,8 @@ frontend/dist
 frontend/tsconfig.tsbuildinfo
 test-results
 docs/archive
+docs/*.webm
+.tmp
 .DS_Store
 .idea
 .vscode

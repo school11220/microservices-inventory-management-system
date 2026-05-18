@@ -16,6 +16,9 @@ This checklist maps the current repository to `project.pdf` for the project titl
 - Docker Compose local deployment and Kubernetes manifests with services, probes, resources, ingress, secrets/config, migrations, Redis, and HPAs.
 - GitHub Actions CI workflow for install, database setup, lint, tests, and build.
 - React admin UI and public demo catalog.
+- GitHub repository: `https://github.com/school11220/microservices-inventory-management-system`
+- Temporary public demo URL: `https://msgstr-divx-kansas-celebrities.trycloudflare.com`
+- Demo video release: `https://github.com/school11220/microservices-inventory-management-system/releases/tag/demo-video-v1`
 
 ## Verification Commands
 
@@ -28,19 +31,16 @@ BASE_URL=http://localhost:3000 ./scripts/smoke-test.sh
 LOAD_TEST_URL=http://localhost:3000/health LOAD_TEST_REQUESTS=1000 npm run load:test
 ```
 
-## External Submission Inputs Still Needed
+## External Inputs Still Needed For Permanent Hosting
 
-The repository cannot create these without your accounts or credentials:
+The code and temporary public demo are complete. A permanent production deployment still needs your account-owned infrastructure and secrets:
 
-1. GitHub repository URL.
-2. Container registry namespace and image tags.
-3. Production deployment target, for example DigitalOcean Kubernetes, EKS, GKE, Render, Railway, or Fly.io.
-4. Public domain and DNS access.
-5. HTTPS/TLS strategy.
-6. Production PostgreSQL connection strings for Auth, Inventory, Order, Reporting, and Event Bus.
-7. Production Redis URL.
-8. Kafka broker URL if enabling Kafka mode.
-9. OpenSearch/Elasticsearch URL if enabling production search mode.
-10. Production `JWT_SECRET` and `INTERNAL_EVENT_TOKEN`.
-11. Final public demo URL.
-12. Demo video URL.
+1. Container registry namespace and image tags.
+2. Production deployment target, for example DigitalOcean Kubernetes, EKS, GKE, Render, Railway, or Fly.io.
+3. Public domain and DNS access.
+4. HTTPS/TLS strategy.
+5. Production PostgreSQL connection strings for Auth, Inventory, Order, Reporting, and Event Bus.
+6. Production Redis URL.
+7. Kafka broker URL if enabling Kafka mode.
+8. OpenSearch/Elasticsearch URL if enabling production search mode.
+9. Production `JWT_SECRET` and `INTERNAL_EVENT_TOKEN`.

@@ -9,6 +9,11 @@ The project is deployed locally with Docker Compose and verified at:
 - Frontend: `http://localhost:5173`
 - API Gateway: `http://localhost:3000`
 - Health: `http://localhost:3000/health`
+- Temporary public demo: `https://msgstr-divx-kansas-celebrities.trycloudflare.com`
+- GitHub repository: `https://github.com/school11220/microservices-inventory-management-system`
+- Demo video release: `https://github.com/school11220/microservices-inventory-management-system/releases/tag/demo-video-v1`
+
+The public demo URL is a Cloudflare quick tunnel pointed at the local Docker Compose deployment. It is suitable for a temporary submission/demo check, but it is not a permanent production deployment and will stop when the tunnel process or this machine stops.
 
 Local verification already passed:
 
@@ -39,7 +44,6 @@ Provide these values to finish a public deployment:
 | Public domain              | Yes       | `inventory.yourdomain.com`                                        |
 | DNS access                 | Yes       | Ability to create `A` or `CNAME` records                          |
 | TLS strategy               | Yes       | Platform-managed TLS, NGINX ingress + cert-manager, or Cloudflare |
-| GitHub repository URL      | Yes       | `https://github.com/<user>/<repo>`                                |
 | Production PostgreSQL URLs | Yes       | Runtime and migration URLs per service                            |
 | Production Redis URL       | Yes       | `redis://...`                                                     |
 | `JWT_SECRET`               | Yes       | 32+ random characters                                             |

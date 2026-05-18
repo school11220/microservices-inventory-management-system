@@ -19,11 +19,11 @@ Source of truth: `project.pdf`.
 
 | PDF deliverable                    | Status                | Notes                                                                                                                                                                                                                            |
 | ---------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Project Documentation / Report PDF | Repo-ready            | `docs/Microservices_Inventory_Management_System_Report.html` is the editable report source. Export to PDF for final upload if `docs/Microservices_Inventory_Management_System_Report.pdf` is not present after local conversion. |
-| Live Public Demo URL               | External input needed | Requires a hosting target, public domain, HTTPS/TLS, container registry, and production secrets. See `docs/DEPLOYMENT_RUNBOOK.md`.                                                                                               |
-| GitHub Repository                  | External input needed | This workspace is not a Git repository. Create/push a GitHub repo before final submission.                                                                                                                                       |
-| README.md per project              | Complete              | Root `README.md` is aligned to the `Microservices Inventory Management System` title and includes run, verify, and deployment notes.                                                                                             |
-| Demo Video                         | External input needed | Record a 3-7 minute walkthrough after the public deployment is online.                                                                                                                                                           |
+| Project Documentation / Report PDF | Complete              | `docs/Microservices_Inventory_Management_System_Report.pdf` is generated from the editable HTML source at `docs/Microservices_Inventory_Management_System_Report.html`.                                                          |
+| Live Public Demo URL               | Temporary demo live   | `https://msgstr-divx-kansas-celebrities.trycloudflare.com` is running through a Cloudflare quick tunnel backed by the verified Docker Compose stack. Permanent hosting still needs the inputs in `docs/DEPLOYMENT_RUNBOOK.md`.     |
+| GitHub Repository                  | Complete              | `https://github.com/school11220/microservices-inventory-management-system`                                                                                                                                                       |
+| README.md per project              | Complete              | Root `README.md` is aligned to the `Microservices Inventory Management System` title and includes run, verify, deployment, credentials, and submission notes.                                                                     |
+| Demo Video                         | Complete              | Release target: `https://github.com/school11220/microservices-inventory-management-system/releases/tag/demo-video-v1`                                                                                                           |
 
 ## Current Verification
 
@@ -31,13 +31,13 @@ Source of truth: `project.pdf`.
 - `npm run lint`: passed.
 - `docker compose config --quiet`: passed.
 - `BASE_URL=http://localhost:3000 ./scripts/smoke-test.sh`: passed against Docker Compose.
-- `LOAD_TEST_URL=http://localhost:3000/health LOAD_TEST_REQUESTS=1000 npm run load:test`: passed cleanly after the rate-limit window reset, with 0 failures and >1000 requests/minute.
+- `BASE_URL=https://msgstr-divx-kansas-celebrities.trycloudflare.com/api ./scripts/smoke-test.sh`: passed against the public tunnel.
+- `LOAD_TEST_URL=http://localhost:3000/health LOAD_TEST_REQUESTS=1000 npm run load:test`: passed with 1000 completed requests, 0 failures, 8496.18 requests/minute, and 524.06 ms p95 latency.
 
-## Non-Code Items You Must Provide
+## Remaining Inputs For Permanent Production Deployment
 
-- GitHub repository URL.
-- Public HTTPS deployment URL.
 - Container registry namespace or account.
+- Production hosting target, Kubernetes cluster, or managed container platform.
+- Public domain and DNS access for a stable HTTPS URL.
 - Production database, Redis, Kafka, and OpenSearch URLs if using managed services.
 - Production secrets: `JWT_SECRET`, `INTERNAL_EVENT_TOKEN`, database passwords/URLs, and optional `GRAFANA_ADMIN_PASSWORD`.
-- Demo video URL.
