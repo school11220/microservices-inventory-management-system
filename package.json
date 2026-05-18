@@ -21,6 +21,7 @@
     "docker:up": "docker compose up --build",
     "docker:down": "docker compose down -v",
     "load:test": "node scripts/load-test.mjs",
+    "public:demo": "node scripts/public-demo-proxy.mjs",
     "verify": "npm run db:generate && npm run build && npm run test"
   },
   "engines": {
