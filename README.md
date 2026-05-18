@@ -58,7 +58,7 @@ Seeded users only:
 - Admin: `admin` / `ChangeMe123!`
 - Staff: `staff` / `ChangeMe123!`
 
-No product/order demo data is seeded automatically. Create products from the admin UI or API.
+The seed process creates a small public demo catalog. Orders remain user-created so the saga flow can be demonstrated live.
 
 ## Local Development
 
