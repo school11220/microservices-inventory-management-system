@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Microservices Inventory Management System Report</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm;
+      }
+      body {
+        color: #16221b;
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+      }
+      h1,
+      h2,
+      h3 {
+        color: #0f3d2e;
+      }
+      h1 {
+        font-size: 34px;
+        margin-top: 0;
+      }
+      h2 {
+        border-bottom: 1px solid #b9c9bf;
+        font-size: 22px;
+        margin-top: 28px;
+        padding-bottom: 6px;
+      }
+      table {
+        border-collapse: collapse;
+        margin: 12px 0 20px;
+        width: 100%;
+      }
+      th,
+      td {
+        border: 1px solid #b9c9bf;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #e8f3ed;
+      }
+      code,
+      pre {
+        background: #eef5f1;
+        color: #0f3d2e;
+        font-family: 'Courier New', monospace;
+      }
+      pre {
+        padding: 12px;
+        white-space: pre-wrap;
+      }
+      .cover {
+        align-items: center;
+        background: #0f3d2e;
+        color: #f4fff8;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-height: 720px;
+        padding: 36px;
+        text-align: center;
+      }
+      .cover h1 {
+        color: #f4fff8;
+        font-size: 46px;
+      }
+      .cover p {
+        font-size: 18px;
+        max-width: 680px;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .muted {
+        color: #53625a;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="cover">
+      <h1>Microservices Inventory Management System</h1>
+      <p>Event-Driven, Fault-Tolerant, Scalable Retail Backend</p>
+      <p>LogicVeda Web Development Domain Capstone Project - March 2026</p>
+      <p class="muted">Prepared for final project submission.</p>
+    </section>
+
+    <section class="page-break">
+      <h2>1. Project Overview</h2>
+      <p>
+        Microservices Inventory Management System is a production-style inventory and order
+        management platform for e-commerce and retail operations. It decomposes authentication,
+        inventory, orders, reporting, event delivery, and gateway responsibilities into
+        independently deployable services.
+      </p>
+      <p>
+        The platform demonstrates service decomposition, eventual consistency through sagas, API
+        gateway routing, JWT authorization, durable event delivery, observability, resilience
+        patterns, Docker local deployment, and Kubernetes-ready production deployment.
+      </p>
+      <h3>Target Users</h3>
+      <ul>
+        <li>E-commerce startups that need reliable catalog, stock, and order APIs.</li>
+        <li>Retail teams that need admin inventory visibility and low-stock alerts.</li>
+        <li>Supply-chain SaaS platforms that need an integration-ready backend.</li>
+      </ul>
+      <h3>Non-Functional Goals</h3>
+      <ul>
+        <li>Throughput target: at least 1000 requests per minute.</li>
+        <li>Resilience: circuit breakers, retries, timeouts, rate limiting, and bulkheads.</li>
+        <li>
+          Observability: structured logs, metrics, Prometheus output, Grafana dashboards, and
+          correlation IDs.
+        </li>
+        <li>
+          Data consistency: saga-based eventual consistency instead of distributed ACID
+          transactions.
+        </li>
+      </ul>
+    </section>
+
+    <section class="page-break">
+      <h2>2. Key Features</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Feature</th>
+            <th>Description</th>
+            <th>Acceptance Criteria</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>F01</td>
+            <td>API Gateway</td>
+            <td>
+              Custom NestJS gateway for service routing, auth proxying, rate limiting, health, and
+              metrics.
+            </td>
+            <td>
+              All API requests route correctly and JWT validation is enforced for protected paths.
+            </td>
+          </tr>
+          <tr>
+            <td>F02</td>
+            <td>Authentication Service</td>
+            <td>Register, login, token verification, and role management.</td>
+            <td>JWT issuance and validation work across services with Admin and Staff roles.</td>
+          </tr>
+          <tr>
+            <td>F03</td>
+            <td>Inventory Service</td>
+            <td>
+              Product CRUD, stock levels, low-stock alerts, atomic stock adjustments, and optimistic
+              locking.
+            </td>
+            <td>Stock updates are atomic and concurrent writes are guarded by version checks.</td>
+          </tr>
+          <tr>
+            <td>F04</td>
+            <td>Orders Service</td>
+            <td>Order creation, status tracking, payment simulation, and saga orchestration.</td>
+            <td>
+              Order creation triggers stock reservation and reaches confirmed or failed status.
+            </td>
+          </tr>
+          <tr>
+            <td>F05</td>
+            <td>Event Bus</td>
+            <td>
+              Durable event log, retry delivery, audit view, idempotent consumers, and optional
+              Kafka mirroring.
+            </td>
+            <td>Events are delivered at least once and duplicate side effects are prevented.</td>
+          </tr>
+          <tr>
+            <td>F06</td>
+            <td>Reporting and Search</td>
+            <td>
+              Sales, inventory, stock-alert, and event projections with PostgreSQL facets and
+              optional OpenSearch.
+            </td>
+            <td>Aggregations, faceted search, and realtime stock metrics are available.</td>
+          </tr>
+          <tr>
+            <td>F07</td>
+            <td>Resilience Patterns</td>
+            <td>
+              Gateway rate limits, upstream timeouts, safe-method retries, circuit breakers, and
+              bulkheads.
+            </td>
+            <td>Partial failures degrade gracefully rather than cascading across the system.</td>
+          </tr>
+          <tr>
+            <td>F08</td>
+            <td>Observability</td>
+            <td>
+              Structured JSON logs, health checks, metrics, Prometheus endpoint, Grafana
+              provisioning, and Jaeger profile.
+            </td>
+            <td>Requests carry correlation IDs and operational state is observable.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="page-break">
+      <h2>3. Technology Stack</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Technology</th>
+            <th>Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Frontend</td>
+            <td>React, TypeScript, TailwindCSS, Redux Toolkit</td>
+            <td>Typed, responsive admin UI and public catalog.</td>
+          </tr>
+          <tr>
+            <td>Backend</td>
+            <td>Node.js 22, NestJS</td>
+            <td>Structured services, dependency injection, validation, and Swagger support.</td>
+          </tr>
+          <tr>
+            <td>Gateway</td>
+            <td>Custom NestJS API Gateway</td>
+            <td>Direct control over auth proxying, routing, metrics, and resilience behavior.</td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>PostgreSQL, Prisma</td>
+            <td>ACID service databases with versioned migrations and typed access.</td>
+          </tr>
+          <tr>
+            <td>Search</td>
+            <td>OpenSearch optional, PostgreSQL fallback facets</td>
+            <td>
+              Production search can use OpenSearch while local deployments remain self-contained.
+            </td>
+          </tr>
+          <tr>
+            <td>Messaging</td>
+            <td>Durable HTTP event bus, optional Kafka mirror</td>
+            <td>Runnable by default, with Kafka available for production event streaming.</td>
+          </tr>
+          <tr>
+            <td>Cache</td>
+            <td>Redis</td>
+            <td>Distributed gateway rate limiting.</td>
+          </tr>
+          <tr>
+            <td>Observability</td>
+            <td>Prometheus, Grafana, Jaeger profile, JSON logs</td>
+            <td>Operational visibility and request correlation.</td>
+          </tr>
+          <tr>
+            <td>Deployment</td>
+            <td>Docker Compose, Kubernetes manifests, GitHub Actions</td>
+            <td>Local repeatability and production-ready orchestration.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="page-break">
+      <h2>4. Architecture</h2>
+      <pre>
+React Admin UI / Public Catalog
+          |
+          v
+API Gateway - JWT validation, routing, rate limits, resilience
+   |        |          |          |            |
+   v        v          v          v            v
+Auth     Inventory   Orders    Reporting    Event Bus
+ DB         DB        DB          DB       Durable Event Log
+                         |          ^
+                         v          |
+                  OrderCreated -> StockSucceeded / StockFailed
+                         |
+                         v
+                 Saga confirmation or compensation
+      </pre>
+      <p>
+        Each service owns its database. The order workflow uses events and idempotent consumers to
+        maintain eventual consistency between orders, stock reservations, and reporting projections.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>5. Execution Timeline</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Deliverables</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Week 1</td>
+            <td>
+              Service map, monorepo, authentication, inventory CRUD, gateway routing, Docker
+              Compose, smoke tests.
+            </td>
+          </tr>
+          <tr>
+            <td>Week 2</td>
+            <td>
+              Event bus, order service, saga workflow, event consumers, admin frontend, end-to-end
+              order placement.
+            </td>
+          </tr>
+          <tr>
+            <td>Week 3</td>
+            <td>
+              Resilience patterns, product search, faceted filters, reporting dashboards, structured
+              logs, correlation IDs, load testing.
+            </td>
+          </tr>
+          <tr>
+            <td>Week 4</td>
+            <td>
+              Kubernetes manifests, ingress/HPA, GitHub Actions, observability dashboards, final QA,
+              README, report export.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="page-break">
+      <h2>6. Technical Highlights</h2>
+      <h3>Security</h3>
+      <ul>
+        <li>JWT bearer authentication at the gateway and service level.</li>
+        <li>Role-based authorization for Admin and Staff workflows.</li>
+        <li>DTO validation, whitelisting, and non-whitelisted field rejection.</li>
+        <li>Helmet, CORS configuration, and no committed `.env` requirement.</li>
+      </ul>
+      <h3>Performance and Reliability</h3>
+      <ul>
+        <li>Gateway rate limiting backed by Redis.</li>
+        <li>Safe-method retries and upstream timeouts.</li>
+        <li>Circuit breaker and per-upstream bulkhead protections.</li>
+        <li>Load test result: 1000 requests, 0 failures, more than 1000 requests per minute.</li>
+      </ul>
+      <h3>Data Consistency</h3>
+      <ul>
+        <li>Orders publish `OrderCreated` events after simulated payment authorization.</li>
+        <li>
+          Inventory reserves stock atomically and publishes `StockSucceeded` or `StockFailed`.
+        </li>
+        <li>Order service confirms or fails orders based on stock outcomes.</li>
+        <li>Processed event tables prevent duplicate side effects.</li>
+      </ul>
+    </section>
+
+    <section class="page-break">
+      <h2>7. Deployment and Operations</h2>
+      <p>
+        The project can run locally with Docker Compose and is prepared for Kubernetes deployment.
+        The Kubernetes manifest defines services, deployments, probes, resources, ingress, secrets,
+        configuration, migrations, Redis, and HPAs.
+      </p>
+      <p>
+        For public deployment, provide a container registry, production database URLs, Redis URL,
+        production secrets, DNS access, and a TLS strategy. The detailed checklist is maintained in
+        <code>docs/DEPLOYMENT_RUNBOOK.md</code>.
+      </p>
+      <h3>Operational Endpoints</h3>
+      <ul>
+        <li>Gateway health: <code>/health</code></li>
+        <li>Gateway metrics: <code>/metrics</code></li>
+        <li>Prometheus metrics: <code>/metrics/prometheus</code></li>
+        <li>Service Swagger docs: <code>/docs</code> on each backend service</li>
+      </ul>
+    </section>
+
+    <section class="page-break">
+      <h2>8. Visuals and Demo Plan</h2>
+      <p>Recommended screenshots or video scenes for final submission:</p>
+      <ol>
+        <li>Public catalog without login.</li>
+        <li>Login page with demo credentials.</li>
+        <li>Products table and product creation form.</li>
+        <li>Atomic stock adjustment and low-stock state.</li>
+        <li>Order creation and order status history.</li>
+        <li>Reports dashboard with sales and inventory projections.</li>
+        <li>Gateway health and metrics endpoints.</li>
+        <li>Docker/Kubernetes deployment status.</li>
+      </ol>
+    </section>
+
+    <section class="page-break">
+      <h2>9. API and Workflow Summary</h2>
+      <p>
+        The system exposes a REST API through the gateway. The gateway validates bearer tokens for
+        protected routes and forwards requests to the correct upstream service. Public routes
+        include login, registration, token verification, health, and the public product catalog.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Workflow</th>
+            <th>Primary Endpoints</th>
+            <th>Expected Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Authentication</td>
+            <td>
+              <code>POST /auth/login</code>, <code>POST /auth/register</code>,
+              <code>POST /auth/verify</code>
+            </td>
+            <td>JWT token issuance, validation, and role-aware user context.</td>
+          </tr>
+          <tr>
+            <td>Product Catalog</td>
+            <td>
+              <code>GET /products</code>, <code>POST /products</code>,
+              <code>PUT /products/:id</code>, <code>DELETE /products/:id</code>
+            </td>
+            <td>Admin-managed catalog with pagination, search, category filters, and facets.</td>
+          </tr>
+          <tr>
+            <td>Stock Control</td>
+            <td><code>PUT /inventory/:id/stock</code>, <code>POST /inventory/bulk-update</code></td>
+            <td>Atomic stock adjustments with optimistic locking and low-stock events.</td>
+          </tr>
+          <tr>
+            <td>Order Processing</td>
+            <td>
+              <code>POST /orders</code>, <code>GET /orders</code>, <code>GET /orders/:id</code>,
+              <code>PUT /orders/:id/status</code>
+            </td>
+            <td>
+              Order creation, simulated payment authorization, status history, and saga
+              confirmation.
+            </td>
+          </tr>
+          <tr>
+            <td>Reporting</td>
+            <td>
+              <code>GET /reports/sales</code>, <code>GET /reports/inventory</code>,
+              <code>GET /reports/stock-alerts</code>, <code>GET /reports/events</code>
+            </td>
+            <td>Sales totals, inventory snapshots, stock alerts, and event audit data.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The primary end-to-end business path is: an Admin creates a product, Staff or Admin creates
+        an order, the order service authorizes simulated payment, the event bus publishes
+        `OrderCreated`, inventory reserves stock, order status becomes `CONFIRMED`, and reporting
+        receives updated sales and inventory projections.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>10. Testing and Quality Evidence</h2>
+      <p>
+        The project includes unit tests around gateway routing, authentication response safety,
+        event bus retry behavior, inventory stock events, order utility calculations, order event
+        handling, reporting projections, and reporting utility functions. The frontend currently
+        relies on TypeScript build validation and production bundle checks.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>Purpose</th>
+            <th>Latest Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>npm run verify</code></td>
+            <td>Prisma generation, full build, and all workspace tests.</td>
+            <td>Passed.</td>
+          </tr>
+          <tr>
+            <td><code>npm run lint</code></td>
+            <td>ESLint checks across services, frontend, and packages.</td>
+            <td>Passed.</td>
+          </tr>
+          <tr>
+            <td><code>docker compose config --quiet</code></td>
+            <td>Validates Docker Compose syntax and interpolation.</td>
+            <td>Passed.</td>
+          </tr>
+          <tr>
+            <td><code>./scripts/smoke-test.sh</code></td>
+            <td>
+              Creates a temporary product, places an order, waits for saga confirmation, and cleans
+              up.
+            </td>
+            <td>Passed.</td>
+          </tr>
+          <tr>
+            <td><code>npm run load:test</code></td>
+            <td>Checks gateway throughput against the PDF target.</td>
+            <td>1000 requests, 0 failures, more than 1000 requests per minute.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        A first load-test attempt immediately after smoke testing hit the configured gateway rate
+        limit. After the rate-limit window reset, the same 1000-request test passed cleanly. This
+        confirms the failures were controlled rate limiting rather than service instability.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>11. Production Readiness and Deployment Inputs</h2>
+      <p>
+        The repository is ready for a public deployment once external account information is
+        available. The codebase cannot complete these items by itself because they depend on the
+        owner's cloud, DNS, registry, and secret-management choices.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Required Input</th>
+            <th>Why It Is Needed</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Container registry namespace</td>
+            <td>All service images must be pushed before Kubernetes can pull them.</td>
+          </tr>
+          <tr>
+            <td>Public deployment target</td>
+            <td>The live demo must run on a public platform or Kubernetes cluster.</td>
+          </tr>
+          <tr>
+            <td>Domain and DNS access</td>
+            <td>The PDF requires a public HTTPS demo URL.</td>
+          </tr>
+          <tr>
+            <td>Production PostgreSQL URLs</td>
+            <td>Each database-backed service needs runtime and migration connection strings.</td>
+          </tr>
+          <tr>
+            <td>Redis URL</td>
+            <td>Required for distributed gateway rate limiting in production.</td>
+          </tr>
+          <tr>
+            <td>JWT and internal event secrets</td>
+            <td>Required for secure user tokens and internal event delivery.</td>
+          </tr>
+          <tr>
+            <td>Kafka and OpenSearch URLs</td>
+            <td>Optional production-grade event streaming and search backends.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        The detailed deployment instructions and exact environment variable names are maintained in
+        <code>docs/DEPLOYMENT_RUNBOOK.md</code>.
+      </p>
+    </section>
+
+    <section class="page-break">
+      <h2>12. Reflection and Roadmap</h2>
+      <p>
+        The project applies production web engineering patterns including microservice boundaries,
+        asynchronous event delivery, idempotent consumers, gateway-level resilience, and
+        observability. Future improvements include managed Kafka as the primary event transport,
+        managed OpenSearch in production, richer warehouse/location modeling, and automated
+        screenshot generation for release evidence.
+      </p>
+    </section>
+  </body>
+</html>

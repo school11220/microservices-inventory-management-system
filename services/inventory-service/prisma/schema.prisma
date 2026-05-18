@@ -1,0 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("INVENTORY_DATABASE_URL")
+  directUrl = env("INVENTORY_DIRECT_URL")
+}
+
+model Product {
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  price            Decimal  @db.Decimal(12, 2)
+  category         String
+  stockLevel       Int      @default(0)
+  reorderThreshold Int      @default(10)
+  imageUrl         String?
+  version          Int      @default(1)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([category])
+  @@index([stockLevel])
+}
+
+model ProcessedEvent {
+  eventId          String   @id
+  type             String
+  outcomeType      String?
+  outcomePayload   Json?
+  lowStockPayloads Json?
+  processedAt      DateTime @default(now())
+}

@@ -1,0 +1,16 @@
+FROM node:22-alpine AS app
+RUN apk add --no-cache openssl
+WORKDIR /app
+COPY package.json package-lock.json* ./
+COPY tsconfig.base.json ./
+COPY packages ./packages
+COPY services ./services
+COPY frontend ./frontend
+RUN npm ci
+ARG WORKSPACE
+ENV WORKSPACE=${WORKSPACE}
+RUN npm run build -w @inventory/contracts
+RUN if [ "$WORKSPACE" = "auth-service" ] || [ "$WORKSPACE" = "inventory-service" ] || [ "$WORKSPACE" = "order-service" ] || [ "$WORKSPACE" = "reporting-service" ]; then npm run prisma:generate -w @inventory/$WORKSPACE; fi
+RUN npm run build -w @inventory/$WORKSPACE
+EXPOSE 3000
+CMD ["sh", "-c", "npm run start -w @inventory/${WORKSPACE}"]

@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Microservices Inventory Management System
+    orgId: 1
+    folder: Microservices Inventory Management System
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

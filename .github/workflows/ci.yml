@@ -1,0 +1,48 @@
+name: inventory-platform-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: inventory
+          POSTGRES_PASSWORD: inventory
+          POSTGRES_DB: inventory_bootstrap
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U inventory -d inventory_bootstrap"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      JWT_SECRET: ci-jwt-secret
+      INTERNAL_EVENT_TOKEN: ci-event-token
+      AUTH_DATABASE_URL: postgresql://inventory:inventory@localhost:5432/auth_db?schema=public
+      AUTH_DIRECT_URL: postgresql://inventory:inventory@localhost:5432/auth_db?schema=public
+      INVENTORY_DATABASE_URL: postgresql://inventory:inventory@localhost:5432/inventory_db?schema=public
+      INVENTORY_DIRECT_URL: postgresql://inventory:inventory@localhost:5432/inventory_db?schema=public
+      ORDER_DATABASE_URL: postgresql://inventory:inventory@localhost:5432/order_db?schema=public
+      ORDER_DIRECT_URL: postgresql://inventory:inventory@localhost:5432/order_db?schema=public
+      REPORTING_DATABASE_URL: postgresql://inventory:inventory@localhost:5432/reporting_db?schema=public
+      REPORTING_DIRECT_URL: postgresql://inventory:inventory@localhost:5432/reporting_db?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: psql postgresql://inventory:inventory@localhost:5432/inventory_bootstrap -c 'CREATE DATABASE auth_db OWNER inventory;' -c 'CREATE DATABASE inventory_db OWNER inventory;' -c 'CREATE DATABASE order_db OWNER inventory;' -c 'CREATE DATABASE reporting_db OWNER inventory;'
+      - run: npm run db:generate
+      - run: npm run db:migrate
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build

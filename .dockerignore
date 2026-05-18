@@ -1,0 +1,19 @@
+node_modules
+**/node_modules
+
+dist
+**/dist
+coverage
+**/coverage
+frontend/dist
+frontend/tsconfig.tsbuildinfo
+
+.git
+.github
+.env
+.env.*
+*.log
+npm-debug.log*
+
+services/*/src/generated
+Inventory Management System – Deliverables Package.pdf

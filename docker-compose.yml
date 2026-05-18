@@ -1,0 +1,258 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: inventory
+      POSTGRES_DB: inventory_bootstrap
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U inventory -d inventory_bootstrap']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  kafka:
+    image: bitnami/kafka:3.7
+    profiles: ['broker']
+    environment:
+      KAFKA_ENABLE_KRAFT: 'yes'
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      ALLOW_PLAINTEXT_LISTENER: 'yes'
+    ports:
+      - '9092:9092'
+
+  opensearch:
+    image: opensearchproject/opensearch:2.15.0
+    profiles: ['search']
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: 'true'
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-MicroservicesInventory@2026}
+      OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+    ports:
+      - '9200:9200'
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    profiles: ['observability']
+    ports:
+      - '16686:16686'
+      - '4318:4318'
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    profiles: ['observability']
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - '9090:9090'
+    depends_on:
+      - api-gateway
+      - auth-service
+      - inventory-service
+      - order-service
+      - reporting-service
+      - event-bus-service
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    profiles: ['observability']
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - '3006:3000'
+    depends_on:
+      - prometheus
+
+  event-bus-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: event-bus-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3005
+      INTERNAL_EVENT_TOKEN: ${INTERNAL_EVENT_TOKEN:-local-event-token}
+      EVENT_STORE_DATABASE_URL: ${EVENT_STORE_DATABASE_URL:-postgresql://inventory:inventory@postgres:5432/event_bus_db?schema=public}
+      EVENT_TRANSPORT: ${EVENT_TRANSPORT:-http}
+      KAFKA_BROKERS: ${KAFKA_BROKERS:-}
+      KAFKA_EVENTS_TOPIC: ${KAFKA_EVENTS_TOPIC:-inventory.domain-events}
+      INVENTORY_SERVICE_URL: http://inventory-service:3002
+      ORDER_SERVICE_URL: http://order-service:3003
+      REPORTING_SERVICE_URL: http://reporting-service:3004
+    ports:
+      - '3005:3005'
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: auth-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-in-prod}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      AUTH_DATABASE_URL: ${AUTH_DATABASE_URL:-postgresql://inventory:inventory@postgres:5432/auth_db?schema=public}
+      AUTH_DIRECT_URL: ${AUTH_DIRECT_URL:-postgresql://inventory:inventory@postgres:5432/auth_db?schema=public}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://frontend:5173}
+    command: sh -c "npm run prisma:migrate -w @inventory/auth-service && npm run seed -w @inventory/auth-service && npm run start -w @inventory/auth-service"
+    ports:
+      - '3001:3001'
+
+  inventory-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: inventory-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      event-bus-service:
+        condition: service_started
+    environment:
+      PORT: 3002
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-in-prod}
+      INTERNAL_EVENT_TOKEN: ${INTERNAL_EVENT_TOKEN:-local-event-token}
+      INVENTORY_DATABASE_URL: ${INVENTORY_DATABASE_URL:-postgresql://inventory:inventory@postgres:5432/inventory_db?schema=public}
+      INVENTORY_DIRECT_URL: ${INVENTORY_DIRECT_URL:-postgresql://inventory:inventory@postgres:5432/inventory_db?schema=public}
+      SEARCH_BACKEND: ${SEARCH_BACKEND:-postgres}
+      OPENSEARCH_URL: ${OPENSEARCH_URL:-http://opensearch:9200}
+      PRODUCT_SEARCH_INDEX: ${PRODUCT_SEARCH_INDEX:-inventory-products}
+      EVENT_BUS_URL: http://event-bus-service:3005
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://frontend:5173}
+    command: sh -c "npm run prisma:migrate -w @inventory/inventory-service && npm run seed -w @inventory/inventory-service && npm run start -w @inventory/inventory-service"
+    ports:
+      - '3002:3002'
+
+  order-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: order-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      event-bus-service:
+        condition: service_started
+      inventory-service:
+        condition: service_started
+    environment:
+      PORT: 3003
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-in-prod}
+      INTERNAL_EVENT_TOKEN: ${INTERNAL_EVENT_TOKEN:-local-event-token}
+      ORDER_DATABASE_URL: ${ORDER_DATABASE_URL:-postgresql://inventory:inventory@postgres:5432/order_db?schema=public}
+      ORDER_DIRECT_URL: ${ORDER_DIRECT_URL:-postgresql://inventory:inventory@postgres:5432/order_db?schema=public}
+      INVENTORY_SERVICE_URL: http://inventory-service:3002
+      EVENT_BUS_URL: http://event-bus-service:3005
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://frontend:5173}
+      PAYMENT_SIMULATION_MODE: ${PAYMENT_SIMULATION_MODE:-success}
+    command: sh -c "npm run prisma:migrate -w @inventory/order-service && npm run seed -w @inventory/order-service && npm run start -w @inventory/order-service"
+    ports:
+      - '3003:3003'
+
+  reporting-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: reporting-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+      event-bus-service:
+        condition: service_started
+    environment:
+      PORT: 3004
+      JWT_SECRET: ${JWT_SECRET:-local-development-jwt-secret-change-in-prod}
+      INTERNAL_EVENT_TOKEN: ${INTERNAL_EVENT_TOKEN:-local-event-token}
+      REPORTING_DATABASE_URL: ${REPORTING_DATABASE_URL:-postgresql://inventory:inventory@postgres:5432/reporting_db?schema=public}
+      REPORTING_DIRECT_URL: ${REPORTING_DIRECT_URL:-postgresql://inventory:inventory@postgres:5432/reporting_db?schema=public}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://frontend:5173}
+    command: sh -c "npm run prisma:migrate -w @inventory/reporting-service && npm run seed -w @inventory/reporting-service && npm run start -w @inventory/reporting-service"
+    ports:
+      - '3004:3004'
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: api-gateway
+    depends_on:
+      - auth-service
+      - inventory-service
+      - order-service
+      - reporting-service
+      - event-bus-service
+      - redis
+    environment:
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      INVENTORY_SERVICE_URL: http://inventory-service:3002
+      ORDER_SERVICE_URL: http://order-service:3003
+      REPORTING_SERVICE_URL: http://reporting-service:3004
+      EVENT_BUS_URL: http://event-bus-service:3005
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://frontend:5173}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      GATEWAY_RATE_LIMIT_PER_MINUTE: ${GATEWAY_RATE_LIMIT_PER_MINUTE:-1000}
+      GATEWAY_UPSTREAM_TIMEOUT_MS: ${GATEWAY_UPSTREAM_TIMEOUT_MS:-8000}
+      GATEWAY_CIRCUIT_FAILURE_THRESHOLD: ${GATEWAY_CIRCUIT_FAILURE_THRESHOLD:-5}
+      GATEWAY_CIRCUIT_RESET_MS: ${GATEWAY_CIRCUIT_RESET_MS:-30000}
+      GATEWAY_BULKHEAD_LIMIT: ${GATEWAY_BULKHEAD_LIMIT:-100}
+    ports:
+      - '3000:3000'
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        WORKSPACE: frontend
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    command: sh -c "npm run start -w @inventory/frontend"
+    depends_on:
+      - api-gateway
+    ports:
+      - '5173:5173'
+
+volumes:
+  postgres-data:
+  opensearch-data:
+  grafana-data:

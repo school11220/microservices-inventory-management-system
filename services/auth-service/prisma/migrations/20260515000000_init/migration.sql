@@ -1,0 +1,13 @@
+CREATE TYPE "Role" AS ENUM ('ADMIN', 'STAFF');
+
+CREATE TABLE "User" (
+  "id" TEXT NOT NULL,
+  "username" TEXT NOT NULL,
+  "passwordHash" TEXT NOT NULL,
+  "role" "Role" NOT NULL DEFAULT 'STAFF',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");

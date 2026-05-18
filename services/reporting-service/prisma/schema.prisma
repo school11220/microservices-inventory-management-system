@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("REPORTING_DATABASE_URL")
+  directUrl = env("REPORTING_DIRECT_URL")
+}
+
+model ReportEvent {
+  eventId     String   @id
+  type        String
+  source      String?
+  payload     Json
+  occurredAt  DateTime
+  processedAt DateTime @default(now())
+
+  @@index([type])
+  @@index([occurredAt])
+}
+
+model SalesDaily {
+  date       DateTime @id
+  totalSales Decimal  @db.Decimal(12, 2) @default(0)
+  orderCount Int      @default(0)
+  unitsSold  Int      @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model InventorySnapshot {
+  productId        String   @id
+  name             String
+  category         String
+  stockLevel       Int
+  reorderThreshold Int
+  updatedAt        DateTime @updatedAt
+}
+
+model StockAlert {
+  id               String    @id @default(uuid())
+  productId        String
+  name             String
+  stockLevel       Int
+  reorderThreshold Int
+  createdAt        DateTime  @default(now())
+  resolvedAt       DateTime?
+
+  @@index([productId])
+  @@index([createdAt])
+}

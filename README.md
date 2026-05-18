@@ -1,0 +1,121 @@
+# Microservices Inventory Management System
+
+Production-grade microservices inventory and order management platform built to match `project.pdf` in this directory.
+
+## Stack
+
+- Frontend: React, TypeScript, TailwindCSS, React Router, Axios, Redux Toolkit
+- Backend: NestJS services only
+- Data: PostgreSQL, Prisma ORM, versioned migrations, optional OpenSearch product search
+- Messaging/cache: durable event log, optional Kafka event stream mirror, Redis-backed gateway rate limiting
+- Auth: JWT with Admin/Staff RBAC
+- Runtime: Docker Compose for local execution, Kubernetes manifests for cluster deployment
+- Resilience/observability: gateway rate limiting, timeouts, safe-method retries, circuit breakers, bulkheads, correlation IDs, structured JSON request logs, Prometheus metrics, Grafana provisioning, and Jaeger container profile
+
+## Services
+
+- `api-gateway`: ingress routing, rate limiting, JWT validation, health aggregation
+- `auth-service`: registration, login, token verification, user roles
+- `inventory-service`: product catalog CRUD, stock adjustments, low-stock alerts, order stock reservation consumer
+- `order-service`: order placement, order status, saga event consumers and compensation event publishing
+- `reporting-service`: sales, inventory, and stock-alert projections from domain events
+- `event-bus-service`: HTTP event ingress with PostgreSQL durable event log, retry delivery, audit log, and optional Kafka topic publishing
+- `frontend`: internal admin UI and public demo catalog
+
+## Run With Docker
+
+```bash
+docker compose up --build
+```
+
+If your `.env` contains remote database URLs and you want the bundled local PostgreSQL/Redis stack, use:
+
+```bash
+./scripts/docker-local-up.sh
+```
+
+Full local infrastructure profiles:
+
+```bash
+# Search/facets through OpenSearch
+SEARCH_BACKEND=opensearch docker compose --profile search up --build
+
+# Kafka topic publishing for the event stream
+EVENT_TRANSPORT=kafka KAFKA_BROKERS=kafka:9092 docker compose --profile broker up --build
+
+# Prometheus, Grafana, and Jaeger
+docker compose --profile observability up --build
+```
+
+Open:
+
+- Frontend: `http://localhost:5173`
+- Gateway: `http://localhost:3000`
+- Swagger per service: `http://localhost:3001/docs`, `3002/docs`, `3003/docs`, `3004/docs`, `3005/docs`
+
+Seeded users only:
+
+- Admin: `admin` / `ChangeMe123!`
+- Staff: `staff` / `ChangeMe123!`
+
+No product/order demo data is seeded automatically. Create products from the admin UI or API.
+
+## Local Development
+
+```bash
+cp .env.example .env
+npm install
+npm run db:generate
+npm run dev
+```
+
+Run PostgreSQL first, or use the `postgres` service from Docker Compose:
+
+```bash
+docker compose up postgres
+npm run db:migrate
+npm run seed
+npm run dev
+```
+
+## Verification
+
+```bash
+npm run verify
+BASE_URL=http://localhost:3000 ./scripts/smoke-test.sh
+LOAD_TEST_URL=http://localhost:3000/health LOAD_TEST_REQUESTS=1000 npm run load:test
+```
+
+Latest local verification:
+
+- `npm run verify`: passed.
+- `npm run lint`: passed.
+- `docker compose config --quiet`: passed.
+- Docker smoke test: passed, including product creation, order creation, payment simulation, stock-reservation saga, and order confirmation.
+- Clean health load test: 1000 requests, 0 failures, about 4200 requests/minute.
+
+Health and metrics endpoints:
+
+- Gateway aggregate health: `http://localhost:3000/health`
+- Gateway request metrics: `http://localhost:3000/metrics`
+- Gateway Prometheus metrics: `http://localhost:3000/metrics/prometheus`
+- Per-service Swagger: `http://localhost:3001/docs` through `http://localhost:3005/docs`
+- Grafana with the observability profile: `http://localhost:3006`
+- Prometheus with the observability profile: `http://localhost:9090`
+- Jaeger with the observability profile: `http://localhost:16686`
+
+## Deployment
+
+```bash
+kubectl apply -f k8s/inventory-platform.yaml
+```
+
+For production, replace secret values, use managed PostgreSQL or provision databases before migrations, configure TLS ingress, publish service images with the tags referenced in the manifest, and set `SEARCH_BACKEND=opensearch` plus `EVENT_TRANSPORT=kafka` only after those services are reachable.
+
+Database connection string guidance is in [`docs/POSTGRESQL_DEPLOYMENT.md`](docs/POSTGRESQL_DEPLOYMENT.md). In short: use transaction-pooler URLs for `*_DATABASE_URL` in production, and direct URLs for `*_DIRECT_URL` so Prisma migrations do not run through a transaction pooler.
+
+The frontend reads `VITE_API_URL` at container start and writes `runtime-config.js`, so the same image can point at local Docker (`http://localhost:3000`) or Kubernetes ingress (`https://inventory.example.com/api`) without rebuilding. The gateway accepts both direct API paths (`/auth/login`) and ingress-prefixed paths (`/api/auth/login`).
+
+The Kubernetes manifest creates the service databases on first PostgreSQL startup, runs Prisma migrations before each database-backed service starts, uses Kubernetes Secrets for database/JWT/event credentials, and supports both `/api` and `/api/v1` ingress API paths.
+
+Deployment inputs still required for a public HTTPS submission are listed in [`docs/DEPLOYMENT_RUNBOOK.md`](docs/DEPLOYMENT_RUNBOOK.md).
